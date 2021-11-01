@@ -1,4 +1,5 @@
-node-modules/
+.env
+/node-modules/
 node_modules/.bin/detect-libc
 node_modules/.bin/detect-libc.cmd
 node_modules/.bin/detect-libc.ps1
@@ -7723,3 +7724,5 @@ node_modules/yallist/LICENSE
 node_modules/yallist/package.json
 node_modules/yallist/README.md
 node_modules/yallist/yallist.js
+util/database.js
+util/database.js
