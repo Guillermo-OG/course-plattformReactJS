@@ -14,6 +14,12 @@ const app = express();
 const adminRoutes = require("./routes/admin");
 const elementRoutes = require("./routes/element");
 
+//teste
+app.get("/", function (req, res) {
+	res.sendFile(__dirname + "/test.html");
+});
+//
+
 app.use(cors());
 app.use(bodyParser.json({ limit: "10000mb" }));
 app.use(bodyParser.urlencoded({ extended: false }));

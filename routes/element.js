@@ -1,14 +1,18 @@
-const express = require('express');
+const express = require("express");
 
-const elementController = require('../controllers/element');
+const elementController = require("../controllers/element");
 
 const router = express.Router();
 
-router.get('/', elementController.getAllElements);
+router.post("/upload", elementController.postAddPasta);
 
-router.post('/upload', elementController.postAddPasta);
+router.get("/folders", elementController.getElementfolders);
 
-router.post('/upload-video', elementController.postAddVideo);
+router.post("/upload-arquivo", elementController.postAddArquivo);
+
+router.get("/video/:guidVideo", elementController.getSingleVideo);
+
+router.get("/folder/:idPai", elementController.getAllElements);
 
 // router.get('/api', elementController.getProducts);
 
