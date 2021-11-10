@@ -8,11 +8,13 @@ router.post("/upload", elementController.postAddPasta);
 
 router.get("/folders", elementController.getElementfolders);
 
+router.get("/folder/:idPai", elementController.getAllElements);
+
 router.post("/upload-arquivo", elementController.postAddArquivo);
 
-router.get("/video/:guidVideo", elementController.getSingleVideo);
+router.get("/video/:userId/:guidVideo", elementController.getSingleVideo);
 
-router.get("/folder/:idPai", elementController.getAllElements);
+router.post("/video/salvaHistorico", elementController.salvaHistorico);
 
 // router.get('/api', elementController.getProducts);
 

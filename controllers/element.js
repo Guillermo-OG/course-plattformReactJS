@@ -1,34 +1,39 @@
 var fs = require("fs");
 const path = require("path");
-const Elemento = require("../models/elementos");
+const elemento = require("../models/elementos");
+const historicoElementos = require("../models/HistoricoElementos");
 var formidable = require("formidable");
 
 exports.getSingleVideo = (req, res, next) => {
-	const { guidVideo } = req.params;
+	const { userId, guidVideo } = req.params;
+
+	console.log(userId);
 
 	const range = req.headers.range;
 	if (!range) {
 		res.status(400).send("Requires Range header");
 	}
 
-	Elemento.findOne({
-		where: {
-			chaveGUID: guidVideo,
-		},
-	})
+	elemento
+		.findOne({
+			where: {
+				chaveGUID: guidVideo,
+			},
+		})
 		.then((elemento) => {
 			// get os tamanho do video
 			const videoPath = elemento.Link;
 			const videoSize = fs.statSync(elemento.Link).size;
-
-			console.log("videopath", videoPath);
-			console.log("videoSize", videoSize);
 
 			// Parse Range
 			// Exemplo: "bytes=32324-"
 			const CHUNK_SIZE = 10 ** 6; // 1MB
 			const start = Number(range.replace(/\D/g, ""));
 			const end = Math.min(start + CHUNK_SIZE, videoSize - 1);
+
+			if (start == 0) {
+				console.log("comecou", start);
+			}
 
 			const contentLength = end - start + 1;
 			const headers = {
@@ -55,11 +60,12 @@ exports.getSingleVideo = (req, res, next) => {
 exports.getAllElements = (req, res, next) => {
 	const { idPai } = req.params;
 
-	Elemento.findAll({
-		where: {
-			idPai: idPai,
-		},
-	})
+	elemento
+		.findAll({
+			where: {
+				idPai: idPai,
+			},
+		})
 		.then((elementos) => {
 			res.send(elementos);
 		})
@@ -69,11 +75,12 @@ exports.getAllElements = (req, res, next) => {
 };
 
 exports.getElementfolders = (req, res, next) => {
-	Elemento.findAll({
-		where: {
-			idPai: null,
-		},
-	})
+	elemento
+		.findAll({
+			where: {
+				idPai: null,
+			},
+		})
 		.then((elementos) => {
 			res.send(elementos);
 		})
@@ -82,11 +89,39 @@ exports.getElementfolders = (req, res, next) => {
 		});
 };
 
-exports.postAddPasta = (req, res, next) => {
+exports.salvaHistorico = async (req, res, next) => {
 	var payload = { ...req.body };
-	console.log("Ta chegaaano");
-	console.log(payload);
 
+	var elementoGUID = req.body.guidElemento;
+	var userId = req.body.userId;
+
+	var ultimoRegistro = await historicoElementos.findOne({
+		attributes: ["dataAcesso"],
+		where: { guidElemento: elementoGUID, IdUsuario: userId },
+		order: [["dataAcesso", "DESC"]],
+	});
+
+	if (!aconteceuNaMesmaHora(ultimoRegistro.dataAcesso)) {
+		console.log("ultimoRegistro", ultimoRegistro);
+
+		historicoElementos
+			.create({
+				guidElemento: elementoGUID,
+				IdUsuario: userId,
+				dataAcesso: dateAgora,
+			})
+			.then((result) => {
+				// console.log(result);
+				console.log("Pasta criada");
+				res.send({ message: "Pasta criada com sucesso" });
+			})
+			.catch((err) => {
+				console.log(err);
+			});
+	}
+};
+
+exports.postAddPasta = (req, res, next) => {
 	const Nome = req.body.nome;
 	const Descricao = req.body.descricao;
 	const IdPai = payload.idpai;
@@ -96,12 +131,13 @@ exports.postAddPasta = (req, res, next) => {
 		///processa o arquivo
 	} else {
 		//é pasta
-		Elemento.create({
-			Nome: Nome,
-			Descricao: Descricao,
-			IdPai: IdPai,
-			Ativo: true,
-		})
+		elemento
+			.create({
+				Nome: Nome,
+				Descricao: Descricao,
+				IdPai: IdPai,
+				Ativo: true,
+			})
 			.then((result) => {
 				// console.log(result);
 				console.log("Pasta criada");
@@ -163,14 +199,15 @@ exports.postAddArquivo = (req, res, next) => {
 		fs.rename(oldPath, newPath, function (error2) {
 			var currentTime = new Date().getTime();
 
-			Elemento.create({
-				Nome: nome,
-				Descricao: descricao,
-				IdPai: idPai,
-				Tipo: tipo,
-				Link: newPath,
-				Ativo: true,
-			})
+			elemento
+				.create({
+					Nome: nome,
+					Descricao: descricao,
+					IdPai: idPai,
+					Tipo: tipo,
+					Link: newPath,
+					Ativo: true,
+				})
 				.then((result) => {
 					// console.log(result);
 					console.log("Elemento criado");
@@ -181,4 +218,19 @@ exports.postAddArquivo = (req, res, next) => {
 				});
 		});
 	});
+};
+
+const aconteceuNaMesmaHora = (data2) => {
+	var data1 = new Date();
+
+	if (!data2) {
+		return false;
+	}
+
+	return (
+		data1.getFullYear() === data2.getFullYear() &&
+		data1.getMonth() === data2.getMonth() &&
+		data1.getDate() === data2.getDate() &&
+		data1.getHours() === data2.getHours()
+	);
 };
